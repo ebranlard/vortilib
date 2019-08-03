@@ -1,0 +1,9 @@
+*.pyc
+
+
+*_TODO
+*_BKP
+
+vortilib/elements/_matlab
+vortilib/elements/_fortran
+vortilib/elements/_c-mex
