@@ -1,5 +1,19 @@
 import numpy as np
 
+
+def vp_u(CP,Pv,Gamma=1,rcore=0,bViscous=False): 
+    DP = CP - Pv
+    r2 = DP[0] ** 2 + DP[1] ** 2
+    t = np.array([- DP[1],DP[0]])
+    if bViscous:
+        U = Gamma * t[0] / r2 / (2 * np.pi) * (1 - np.exp(- r2 / rcore ** 2))
+        V = Gamma * t[1] / r2 / (2 * np.pi) * (1 - np.exp(- r2 / rcore ** 2))
+    else:
+        U = Gamma * t[0] / r2 / (2 * np.pi)
+        V = Gamma * t[1] / r2 / (2 * np.pi)
+    return U,V
+
+
 def vps_u(CP,XV,Gammas,SmoothModel=0,KernelOrder=2,SmoothParam=None):
     """
     low level interface, for N point Vortices

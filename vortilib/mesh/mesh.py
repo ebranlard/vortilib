@@ -4,6 +4,7 @@ import numpy as np
 class Mesh():
     # constructor
     def __init__(o,v1 = None,v2 = None,v3 = None): 
+        o.values=None
         if v2 is None and v3 is None:
             # 1D
             o.nDim = 1
@@ -118,7 +119,7 @@ class Mesh():
         if (not o.bFakeCellVolumesComputed ):
             o.FakeCellVolumes = np.zeros((o.nGridPoints,1))
             if o.bRegular:
-                o.FakeCellVolumes = prod(o.dCell)
+                o.FakeCellVolumes = np.prod(o.dCell)
             else:
                 if o.nDim == 1:
                     o.FakeCellVolumes = (np.array([0,o.dv1]) + np.array([o.dv1,0])) / 2
@@ -189,9 +190,9 @@ class Mesh():
                 p = 0
                 for i in np.arange(o.n[0]):
                     for j in np.arange(o.n[1]):
-                        p = p + 1
                         GP[p,0] = o.v1[i]
                         GP[p,1] = o.v2[j]
+                        p = p + 1
                 Zc = []
             elif o.nDim == 3:
                 p = 0
@@ -217,7 +218,7 @@ class Mesh():
         else:
             nd = m.shape[0]
         
-        nInput = prod(m.shape) / nd
+        nInput = np.prod(m.shape) / nd
         if (nInput != nGridPoints):
             raise Exception('Wrong mesh input')
         

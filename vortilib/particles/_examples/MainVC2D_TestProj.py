@@ -1,12 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
 from vortilib.elements.InviscidVortexPatch import omega
 from vortilib.elements.VortexPoint import vps_u
 from vortilib.mesh import mesh
 from vortilib.particles import particles
 from vortilib.particles import initialization
 from vortilib.particles import projection
-from mpl_toolkits import mplot3d
 
 from vortilib.maths.vectoranalysis import *
 
@@ -21,9 +21,6 @@ vy = np.linspace(-1.0,1.0,ny)
 XLIM = np.array([-1.5,1.5])
 YLIM = XLIM
 ZLIM = np.array([0,1])
-
-## Standard Init of 2D Vortex code
-# Wind,Algo,Time = fInitVC2D()
 
 # --- Setting up Mesh
 mesh = mesh.Mesh(vx,vy)
@@ -99,16 +96,16 @@ ax.plot_surface(X,Y,omega_z_num_calc, edgecolor='none',alpha=1,antialiased=False
 ax.scatter3D(Part.P[:,0],Part.P[:,1],Part.Intensity / Part.Volume,c=Part.Intensity)
 plt.title('Omega from Ui computation')
 
-# view(3)
-# # ## Mesh2Particles
-# # InitParams.Method     = 'Mesh_CellCenter_OmegaM2P' ;
-# # InitParams.Mesh       = Mesh                       ;
-# # InitParams.MeshValues = MeshValues                 ;
-# # Part=fParticleInitialization(Part,InitParams,Algo);
-# # # Part.removeZeroVorticity();
+# --- Mesh2Particles
+Part2=initialization.init_from_mesh(mesh,location='CellCenter')
+Part2.removeZeroVorticity();
 # # #  omega_z_th=fOmega_InviscidVortexPatch(Part.P(:,1),Part.P(:,2),k_patch,false);
 # 
 # 
+plt.figure()
+ax = plt.axes(projection='3d')
+ax.scatter3D(Part.P[: ,0],Part.P[: ,1],Part.Intensity/Part.Volume,marker = 'o',c = 'r',s=3)
+ax.scatter3D(Part2.P[:,0],Part2.P[:,1],Part2.Intensity/Part2.Volume,marker = '+',c = 'b')
 # 
 # 
 # 
@@ -136,12 +133,6 @@ plt.title('Omega from Ui computation')
 # # # figure, hold on
 # # # surf(X,Y,omega_proj)
 # # # plot3(PartMesh(1,:),PartMesh(2,:),v_p3(1,:)./v_p3(2,:),'ko')
-# # #
-# 
-# 
-# 
-# 
-# # #
 # # #     figure(2), clf
 # # # #     plot(Part.P(:,1),Part.P(:,2),'+')
 # # #     plot3(Part.P(:,1),Part.P(:,2),Part.Intensity(:),'+')
@@ -149,8 +140,6 @@ plt.title('Omega from Ui computation')
 # # #     ylim(YLIM);
 # # #     zlim(ZLIM);
 # # #     pause(0.5)
-# 
-# 
 # # figure,
 # # surf(squeeze(MeshValues(1,:,:))./squeeze(MeshValues(2,:,:)))
 # 

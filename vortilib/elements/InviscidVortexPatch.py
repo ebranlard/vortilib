@@ -1,6 +1,8 @@
 import numpy as np
     
 def omega(X,Y,k=2,bPolarIn=False): 
+    X=np.asarray(X)
+    Y=np.asarray(Y)
     if bPolarIn:
         r = X
         theta = Y
