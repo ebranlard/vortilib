@@ -42,29 +42,29 @@ def vps_u(CP,XV,Gammas,SmoothModel=0,KernelOrder=2,SmoothParam=None):
     elif SmoothModel==1:
         frho2 = lambda r2, iv: r2/ SmoothParam[iv]**2
         fE = lambda rho2 : np.exp(- rho2)
-        if fKernelOrder==2:
+        if KernelOrder==2:
             fKernel = lambda rho2 :  1
-        elif fKernelOrder==4:
+        elif KernelOrder==4:
             fKernel = lambda rho2 :  1 - rho2
-        elif fKernelOrder==6:
+        elif KernelOrder==6:
             fKernel = lambda rho2 :  1 - 2 * rho2 + rho2 ** 2 / 2
-        elif fKernelOrder==8:
+        elif KernelOrder==8:
             fKernel = lambda rho2 : 1 - 3 * rho2 + 3 * rho2 ** 2 / 2 - rho2 ** 3 / 6
         else:
             raise Exception('fKernel order not implemented for Majda model')
     elif SmoothModel==2:
         frho2 = lambda r2, iv: r2/ SmoothParam[iv]**2
         fE = lambda rho2 : np.exp(- rho2/2) # NOTE divided by 2
-        if fKernelOrder==2:
+        if KernelOrder==2:
             fKernel = lambda rho2 :  1
             fE = lambda rho2 : np.exp(- rho2) # NOTE not divided by 2
-        elif fKernelOrder==4:
+        elif KernelOrder==4:
             fKernel = lambda rho2 :  1 - 1 / 2 * rho2
-        elif fKernelOrder==6:
+        elif KernelOrder==6:
             fKernel = lambda rho2 :  1 - rho2 + 1 / 8 * rho2 ** 2
-        elif fKernelOrder==8:
+        elif KernelOrder==8:
             fKernel = lambda rho2 : 1 - 3 / 2 * rho2 + 3 / 8 * rho2 ** 2 - 1 / 48 * rho2 ** 3
-        elif fKernelOrder==10:
+        elif KernelOrder==10:
             fKernel = lambda rho2 : 1 - 2 * rho2 + 3 / 4 * rho2 ** 2 - 1 / 12 * rho2 ** 3 + 1 / 384 * rho2 ** 4
         else:
             raise Exception('Kernel order not implemented for Gaussian2')
