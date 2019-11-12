@@ -2,6 +2,15 @@
 Reference:
     [1] E. Branlard - Wind Turbine Aerodynamics and Vorticity Based Method, Springer, 2017, page 477
 
+Coordinate system:
+
+    z: helix axis
+    x: "upward"
+    y: "side"
+    psi: positive around z
+
+    if WT
+
 """
 
 import numpy as np
@@ -10,28 +19,50 @@ try:
     from pybra.clean_exceptions import *
 except:
     pass
-    
 
-
-
-def vh_theory_raw_u(r, r0, l, Gamma=1, psih=0, nB=3, bWT=True, bSemi=False, author='wrench'): 
+def vh_theory_helical_u(r, psih, r0, l, Gamma=1,  nB=3, bWT=True, author='wrench'): 
     """ 
-    Induced velocity from nB (infinite or semi-infinite) helices, evaluate on a "lifting line"
-    Low level function!
+    Induced velocity from nB *infinite* azimuthally distributed helices 
+    Inputs are in "helical" coordinates
+
+    Low level function! See vh_u
 
     INPUTS:
+       r,psih : helical coordinates 
+       l : torsional pitch:  h=2*pi*l
+       bWT: if True, then helix is wrapping counter clockwise around z (negative rotation)
 
     NOTE: Equivalent of Matlab fUi_HelixNTheories
     """
+    # --- Manipulating inputs (reshaping)
+    r         = np.asarray(r)
+    psih      = np.asarray(psih)
+    shape_in  = r.shape         # saving shape to reshape output at the end
+    r         = r.ravel()
+    psih      = psih.ravel()
+    author    = author.lower()
+    h         = 2*np.pi*l
+    Gamma_tot = Gamma*nB         # Total circulation of the rotor
+    sign      = -1 if bWT else 1
 
-    sign = 1
-    fact = 1
-    if (bWT):
-        sign = - 1
-    
-    if (bSemi):
-        fact = 0.5
-    
+    # --- Output alloc
+    ur = np.zeros(r.shape)
+    ut = np.zeros(r.shape)
+    uz = np.zeros(r.shape)
+
+    # --- Velocity on axis
+    bAxis  = r==0
+    bnAxis = np.logical_not(bAxis)
+    I=np.arange(0,len(r))
+    In=I[bnAxis]
+    ur[bAxis]=0
+    ut[bAxis]=0
+    uz[bAxis]=sign*(Gamma_tot)/h # NOTE: velocity of a vortex cylinder
+
+    # --- From now on, everything is outside of axis
+    r    = r[bnAxis]
+    psih = psih[bnAxis]
+
     # Equation 39.12 of [1]
     pexi      = r/r0 * (l + np.sqrt(l**2 + r0**2))/(l + np.sqrt(l**2 + r**2))*np.exp(np.sqrt(l**2 + r**2)/l)/np.exp(np.sqrt(l**2 + r0**2)/l)
     mexi      = 1/pexi
@@ -42,7 +73,7 @@ def vh_theory_raw_u(r, r0, l, Gamma=1, psih=0, nB=3, bWT=True, bSemi=False, auth
     C1r = l/24*((- 2*l**2 - 9*r**2)/(l**2 + r**2)**(3/2) + (2*l**2 + 9*r0**2)/(l**2 + r0**2)**(3/2))
     vr = 0
     vz = 0
-    if 'okulov' == (author):
+    if 'okulov' == author:
         C1z = C1zWrench
     elif 'wrench' == (author):
         # Equation 39.16
@@ -53,74 +84,73 @@ def vh_theory_raw_u(r, r0, l, Gamma=1, psih=0, nB=3, bWT=True, bSemi=False, auth
     else:
         raise Exception('No other method')
     
-    # Stacking convention is such that upper value corresponds to low r..
-    # TODO vectorize me
-    if (np.abs(r) < r0):
-        try:
-            tmp = 1/((mexi*np.exp(-1j*psih))**nB - 1)
-        except:
-            # Overflow may happen
-            #print(mexi,r/r0,nB)
-            tmp=0
-        vz  =    1/(2*np.pi*l) + 1/(2*np.pi*l)*C0z*np.real( tmp + C1z/nB*np.log(1 + tmp))
-        vr  =                  - 1/(2*np.pi*r)*C0r*np.imag( tmp + C1r/nB*np.log(1 + tmp))
-    elif (np.abs(r) > r0):
-        try:
-            tmp = 1/((pexi*np.exp(-1j*psih))**nB - 1)
-        except:
-            # Overflow may happen (in that case the exponent term is really small)
-            #print(mexi,r/r0,nB)
-            tmp=0
+    bUnder = np.abs(r) < r0
+    bOver  = np.abs(r) > r0
+    #bEqual = np.abs(r)==r0
 
-        vz  =   0              + 1/(2*np.pi*l)*C0z*np.real(-tmp + C1z/nB*np.log(1 + tmp))
-        vr  =                  - 1/(2*np.pi*r)*C0r*np.imag( tmp - C1r/nB*np.log(1 + tmp))
-    else:
-        vr = 0
-        vz = 0
-    
-    vt =      l/r*(1/(2*np.pi*l) - vz)
-    vz = sign*vz
-    ui = fact*nB*Gamma*np.array([vr,vt,vz])
-    return ui
+    # Over
+    tmp = 1/((mexi[bUnder]*np.exp(-1j*psih[bUnder]))**nB - 1) # Produces overflow with large nB
+    vzUnder  =    1/h + 1/(h                )*C0z[bUnder]*np.real( tmp + C1z[bUnder]/nB*np.log(1 + tmp))
+    vrUnder  =        - 1/(2*np.pi*r[bUnder])*C0r[bUnder]*np.imag( tmp + C1r[bUnder]/nB*np.log(1 + tmp))
+    vtUnder  =       l/r[bUnder]*(1/h - vzUnder)
+    # Over
+    tmp = 1/((pexi[bOver]*np.exp(-1j*psih[bOver]))**nB - 1) # Produces overflow with large nB
+    vzOver   =   0              + 1/(h               )*C0z[bOver]*np.real(-tmp + C1z[bOver]/nB*np.log(1 + tmp))
+    vrOver   =                  - 1/(2*np.pi*r[bOver])*C0r[bOver]*np.imag( tmp - C1r[bOver]/nB*np.log(1 + tmp))
+    vtOver   =       l/r[bOver ]*(1/h - vzOver)
+    # At r0
+    #vr = 0
+    #vz = 0
+
+    uz[In[bOver ]] = sign*Gamma_tot * vzOver
+    uz[In[bUnder]] = sign*Gamma_tot * vzUnder
+    ur[In[bOver ]] =      Gamma_tot * vrOver
+    ur[In[bUnder]] =      Gamma_tot * vrUnder
+    ut[In[bOver ]] =      Gamma_tot * vtOver
+    ut[In[bUnder]] =      Gamma_tot * vtUnder
+
+    ur=ur.reshape(shape_in)
+    ut=ut.reshape(shape_in)
+    uz=uz.reshape(shape_in)
+
+    return ur,ut,uz
 
 
 def vh_u(Xcp,Ycp,Zcp,Gamma,R,h,psih=0,nB=3,bWT=True,method='wrench',bSemi=True,polar_out=True):
     """
     Induced velocity by nB azimuthally dstributed helices
-    psih : reference azimuthal position of the first helix
+
+    INPUTS:
+       - psih : reference azimuthal position of the first helix
+       - bSemi: Semi-infinite helices may be obtained using bSemi=True, but then only the axial and tangential 
+            velocity field are correct, and only on the "lifting line"
+       - Others: See vh_theory_helical_u
     """
-    sign = 1
-    if (bWT):
-        sign = - 1
-    l = h/(2*np.pi)
+    METHOD_THEORY=['wrench']
+
+
+    sign = -1 if bWT else 1
+    l    = h/(2*np.pi)
 
     Xcp=np.asarray(Xcp)
     Ycp=np.asarray(Ycp)
     Zcp=np.asarray(Zcp)
 
+    if method.lower() in METHOD_THEORY:
+        # Cartesian to "Helical" coordinates
+        r_cp   = np.sqrt(Xcp**2 + Ycp**2)
+        psi_cp = np.arctan2(Ycp,Xcp)
+        psih_cp= (-psih + psi_cp) - sign * Zcp / l
 
-    shape_in=Xcp.shape
-    Xcp    = Xcp.ravel()
-    Ycp    = Ycp.ravel()
-    Zcp    = Zcp.ravel()
-    r_cp   = np.sqrt(Xcp**2 + Ycp**2)
-    psi_cp = np.arctan2(Ycp,Xcp)
-    psih_cp= (-psih + psi_cp) - sign * Zcp / l
+        ur,ut,uz=vh_theory_helical_u(r=r_cp, psih=psih_cp, r0=R, l=l, Gamma=Gamma, nB=nB, bWT=bWT, author=method)
+        if (bSemi):
+            # NOTE: this is only correct on the lifting line and its wrong for the radial velocity since it's missing!
+            ur=ur/2
+            ut=ut/2
+            uz=uz/2
+    else:
+        raise NotImplementedError('')
 
-    ur  = np.zeros(r_cp.shape)
-    ut  = np.zeros(r_cp.shape)
-    uz  = np.zeros(r_cp.shape)
-    # ---- Loop on all control points to find velocity
-    for i,(rc,psihc,zc) in enumerate(zip(r_cp,psih_cp,Zcp)):
-        #      ui[i,:-1] = ui(i,:) + fUi_HelixNTheories(Algo.Helix.Method(np.arange(1,end() - 1+1)),Gamma,rc,R,l,,nB,bWT,bHalf)
-        u=vh_theory_raw_u(r=rc, r0=R, l=l, Gamma=Gamma, psih=psihc, nB=nB, bWT=bWT , bSemi=bSemi, author=method)
-        ur[i]+=u[0]
-        ut[i]+=u[1]
-        uz[i]+=u[2]
-
-    ur=ur.reshape(shape_in)
-    ut=ut.reshape(shape_in)
-    uz=uz.reshape(shape_in)
     if polar_out:
         return ur,ut,uz
     else:
@@ -146,6 +176,18 @@ class TestHelix(unittest.TestCase):
         bWT   = True # Convention WT or Propeller
         bSemi = True # infinite helix or at the rotor
 
+        # --- Velocity on lifting line should be half the one of infinite helix
+        vr      = np.arange(0.0*R,2*R,0.1*R)
+        nB      = 3
+        Gamma_B = CT*np.pi*R*U0/(nB*Lambda)  # NOTE assume aprime = 0, large tip-sped ratio
+
+
+        ur ,ut ,uz  = vh_u([vr],[vr*0],[vr*0],Gamma_B,R,h,psih=0,nB=nB,bWT=bWT,method=method,bSemi=True)
+        ur2,ut2,uz2 = vh_u([vr],[vr*0],[vr*0],Gamma_B,R,h,psih=0,nB=nB,bWT=bWT,method=method,bSemi=False)
+        np.testing.assert_almost_equal(2*uz,uz2, 4)
+        np.testing.assert_almost_equal(2*ut,ut2, 4)
+
+
         # ---- On the lifting line, close to the root
         # The axial induction is close to the one for an infinite number of blades 
         # The larger B the more it is constant along the span (ie closer to a vortex cylinder)
@@ -166,17 +208,6 @@ class TestHelix(unittest.TestCase):
             gamma_t = - nB*Gamma_B/h # Vortex cylinder (if infinite number of blades)
             ur,ut,uz = vh_u([R*1.5],[0],[0],Gamma_B,R,h,psih=0,nB=nB,bWT=bWT,method=method,bSemi=bSemi)
             np.testing.assert_almost_equal(uz,[0], 4)
-
-
-        # --- Velocity on lifting line should be half the one of infinite helix
-        vr      = np.arange(0.1*R,2*R,0.2*R)
-        nB      = 3
-        Gamma_B = CT*np.pi*R*U0/(nB*Lambda)  # NOTE assume aprime = 0, large tip-sped ratio
-        ur ,ut ,uz  = vh_u([vr],[vr*0],[vr*0],Gamma_B,R,h,psih=0,nB=nB,bWT=bWT,method=method,bSemi=True)
-        ur2,ut2,uz2 = vh_u([vr],[vr*0],[vr*0],Gamma_B,R,h,psih=0,nB=nB,bWT=bWT,method=method,bSemi=False)
-        np.testing.assert_almost_equal(2*uz,uz2, 4)
-        np.testing.assert_almost_equal(2*ut,ut2, 4)
-
 
 
 if __name__ == '__main__':
