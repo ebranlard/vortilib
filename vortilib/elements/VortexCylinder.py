@@ -15,14 +15,52 @@ import numpy.matlib
 try:
     from .elliptic import ellipticPiCarlson, ellipe, ellipk
     from .VortexLine import vl_semiinf_straight_u
+    from .VortexDoublet import doublet_line_polar_u
 except:
-    try:
-        from vortexcylinder.elliptic import ellipticPiCarlson, ellipe, ellipk
-        from vortexcylinder.VortexLine import vl_semiinf_straight_u
-    except:
-        from elliptic import ellipticPiCarlson, ellipe, ellipk
-        from VortexLine import vl_semiinf_straight_u
+    from elliptic import ellipticPiCarlson, ellipe, ellipk
+    from VortexLine import vl_semiinf_straight_u
+    from VortexDoublet import doublet_line_polar_u
 
+def vc_tang_u_doublet(Xcp,Ycp,Zcp,gamma_t=-1,R=1,r_bar_Cut=6, polar_out=True):
+    """
+    Induced velocity from a semi infinite cylinder extending along the z axis, starting at z=0
+    Use a far field "doublet-line" velocity field to speed up computation.
+    The parameter `r_bar_Cut` defines the distance from (0,0) above which the doublet 
+        approximation is used.
+    See `vc_tang_u` for more.
+    """
+    Xcp=np.asarray(Xcp)
+    shape_in=Xcp.shape
+    Xcp=Xcp.ravel()
+    Ycp=Ycp.ravel()
+    Zcp=np.asarray(Zcp).ravel()
+    Rcp  = np.sqrt(Xcp ** 2 + Ycp **2)
+    Rsph = np.sqrt(Rcp ** 2 + Zcp **2)
+    ur   = np.full(Xcp.shape,np.nan)
+    uz   = np.full(Xcp.shape,np.nan)
+    bCut = Rsph>r_bar_Cut*R
+    dmz_dz = gamma_t * R**2 * np.pi # doublet intensity per length
+
+    # Standard cylinder formulation
+    ur[~bCut],uz[~bCut] = vc_tang_u           (Xcp[~bCut],Ycp[~bCut],Zcp[~bCut],gamma_t=gamma_t,R=R,polar_out=True)
+    # Far field formulation
+    ur[ bCut],uz[ bCut] = doublet_line_polar_u(Rcp[ bCut],Zcp[ bCut],dmz_dz)
+
+
+    if polar_out:
+        ur = ur.reshape(shape_in)   
+        uz = uz.reshape(shape_in)   
+        return ur,uz
+    else:
+        psi = np.arctan2(Ycp,Xcp)     ;
+        ux=ur*np.cos(psi)
+        uy=ur*np.sin(psi)
+        ux = ux.reshape(shape_in)   
+        uy = uy.reshape(shape_in)   
+        uz = uz.reshape(shape_in)   
+        return ux,uy,uz
+
+    return ur, uz
 
 
 def vc_tang_u(Xcp,Ycp,Zcp,gamma_t=-1,R=1,polar_out=True,epsilon=0):
@@ -32,6 +70,17 @@ def vc_tang_u(Xcp,Ycp,Zcp,gamma_t=-1,R=1,polar_out=True,epsilon=0):
       gamma_t: tangential vorticity sheet strength of the cylinder
       R: cylinder radius
       epsilon : Regularization parameter, e.g. epsilon=0.0001*R
+
+    EXAMPLE:
+        vx      = np.linspace(-3, 2, 30)
+        vr      = np.linspace(-2, 2, 20)
+        Xcp,Rcp = np.meshgrid(vx,vr)
+        ur, ux  = vc_tang_u(Rcp, Rcp*0, Xcp, gamma_t=-0.3)
+        fig,ax = plt.subplots()
+        im = ax.contourf(Xcp,Rcp, ur**2+(1+ux)**2)
+        cb = fig.colorbar(im)
+        plt.show()
+
     Reference: [1,2],  in particular, equations (7-8) from [1]"""
     EPSILON_AXIS=1e-7; # relative threshold for using axis formula
 
@@ -164,7 +213,7 @@ def cylinder_tang_semi_inf_u_raw(Xcp,Ycp,Zcp,gamma_t=-1,R=1):
 
     return ur,uz
 
-def vcs_tang_u(Xcp,Ycp,Zcp,gamma_t,R,Xcyl,Ycyl,Zcyl,epsilon=0):
+def vcs_tang_u(Xcp,Ycp,Zcp,gamma_t,R,Xcyl,Ycyl,Zcyl,epsilon=0,Ground=False):
     """ 
     Computes the velocity field for nCyl*nr cylinders, extending along z:
         nCyl: number of main cylinders
@@ -177,7 +226,8 @@ def vcs_tang_u(Xcp,Ycp,Zcp,gamma_t,R,Xcyl,Ycyl,Zcyl,epsilon=0):
         gamma_t: array of size (nCyl,nr), distribution of gamma for each cylinder as function of radius
         R      : array of size (nCyl,nr), 
         Xcyl,Ycyl,Zcyl: array of size nCyl) giving the center of the rotor
-        All inputs should be numpy arrays
+        Ground: boolean, True if ground effect is to be accounted for
+    All inputs (except Ground) should be numpy arrays
     """ 
     Xcp=np.asarray(Xcp)
     Ycp=np.asarray(Ycp)
@@ -189,18 +239,29 @@ def vcs_tang_u(Xcp,Ycp,Zcp,gamma_t,R,Xcyl,Ycyl,Zcyl,epsilon=0):
     nCyl,nr = R.shape
     for i in np.arange(nCyl):
         Xcp0,Ycp0,Zcp0=Xcp-Xcyl[i],Ycp-Ycyl[i],Zcp-Zcyl[i]
-        for j in np.arange(nr):
-            print('.',end='')
-            if np.abs(gamma_t[i,j]) > 0:
-                ux1,uy1,uz1 = vc_tang_u(Xcp0,Ycp0,Zcp0,gamma_t[i,j],R[i,j],polar_out=False,epsilon=epsilon)
-                ux = ux + ux1
-                uy = uy + uy1
-                uz = uz + uz1
+        if Ground:
+            YcpMirror = Ycp0+2*Ycyl[i]
+            Ylist = [Ycp0,YcpMirror]
+        else:
+            Ylist = [Ycp0]
+        for iy,Y in enumerate(Ylist):
+            for j in np.arange(nr):
+                if iy==0:
+                    print('.',end='')
+                else:
+                    print('m',end='')
+                if np.abs(gamma_t[i,j]) > 0:
+                    ux1,uy1,uz1 = vc_tang_u(Xcp0,Y,Zcp0,gamma_t[i,j],R[i,j],polar_out=False,epsilon=epsilon)
+                    ux = ux + ux1
+                    uy = uy + uy1
+                    uz = uz + uz1
     print('')
     return ux,uy,uz
     
-def vcs_longi_u(Xcp,Ycp,Zcp,gamma_l,R,Xcyl,Ycyl,Zcyl):
-    """ see vcs_tang_u """ 
+def vcs_longi_u(Xcp,Ycp,Zcp,gamma_l,R,Xcyl,Ycyl,Zcyl,Ground=False):
+    """ see vcs_tang_u 
+    NOTE: Longi vorticity shouldn't matter for ground effect
+    """ 
     Xcp=np.asarray(Xcp)
     Ycp=np.asarray(Ycp)
     Zcp=np.asarray(Zcp)
@@ -494,7 +555,7 @@ class TestCylinder(unittest.TestCase):
             from .VortexRing import rings_u
         except:
             try:
-                from vortexcylinder.VortexRing import rings_u
+                from wiz.VortexRing import rings_u
             except:
                 from VortexRing import rings_u
 
