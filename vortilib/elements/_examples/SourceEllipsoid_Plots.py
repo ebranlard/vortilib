@@ -1,15 +1,14 @@
-from vortilib.elements.SourceEllipsoid import *
+""" 
+Velocity field about a 3D ellipsoid of revolution
+
+Reference:
+    [1] Anderson, Branlard, Vijayakumar, Johnson - Investigation of the nacelle blockage effect for a downwind turbine, Journal of Physics
+
+"""
 import numpy as np
 import matplotlib.pyplot as plt
-try:
-    from pybra.curves import streamQuiver
-    from pybra.tictoc import Timer
-    from pybra.figure import * 
-    setFigureFont(15)
-    setFigurePath('./')
-except:
-    def streamQuiver(*args,**kwargs):
-        pass
+from vortilib.tools.curves import streamQuiver
+from vortilib.elements.SourceEllipsoid import *
 
 # --- Parameters
 minSpeed=0
@@ -28,9 +27,7 @@ U0 = 10
 vx = np.linspace(-2*a,2*a,nx)
 vy = np.linspace(-4*b   ,4*b,ny)
 X,Y = np.meshgrid(vx, vy)
-# with Timer('Numerical'):
 U1,V1 = ser_u_numerical(X,Y,vx,vy,U0,a,b)
-# with Timer('Analytical'):
 U,V   = ser_u(X,Y,U0,a,b)
 
 # PSI = ser_psi_elliptic(MU,ZETA,U0,a,e)
@@ -59,14 +56,7 @@ ax.set_xlim([-2*a,2*a])
 ax.set_xlabel('x/a [-]')
 ax.set_ylabel('r/a [-]')
 ax.set_aspect('equal','box')
-ax.set_title('Source Ellipsoid Streamlines')
-
-
-try:
-    export2pdf()
-except:
-    pass
-
+fig.savefig('figs/SourceEllipsoidStreamlines.pdf')
 plt.show()
 
 

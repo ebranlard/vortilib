@@ -1,7 +1,17 @@
+""" 
+2D vortex points 
+For 3D see VortexParticles
+
+"""
 import numpy as np
 
 
 def vp_u(CP,Pv,Gamma=1,rcore=0,bViscous=False): 
+    """ 
+    Induced velocity by one 2D vortex point on one Control Point (CP)
+    CP: position of control point
+    Pv: position of vortex
+    """
     DP = CP - Pv
     r2 = DP[0] ** 2 + DP[1] ** 2
     t = np.array([- DP[1],DP[0]])
@@ -76,34 +86,34 @@ def vps_u(CP,XV,Gammas,SmoothModel=0,KernelOrder=2,SmoothParam=None):
 
 
     # loop on control point
-    for icp in np.arange(ncp):
-        x0 = CP[icp,:]
-        # Loop on vortex
-        for iv in np.arange(nv):
-            xv = XV[iv,:]
-            X0XV = x0 - xv
-            r2 = X0XV[0] * X0XV[0] + X0XV[1] * X0XV[1]
-            if r2 < 1e-15:
-                # We escape No matter the smooth model and order
-                pass
-            else:
-                if ndim==2:
+    if ndim==2:
+        for icp in np.arange(ncp):
+            x0 = CP[icp,:]
+            # Loop on vortex
+            for iv in np.arange(nv):
+                xv = XV[iv,:]
+                X0XV = x0 - xv
+                r2 = X0XV[0] * X0XV[0] + X0XV[1] * X0XV[1]
+                if r2 < 1e-15:
+                    # We escape No matter the smooth model and order
+                    pass
+                else:
                     t = np.array([-X0XV[1],X0XV[0]])
-                else:
-                    t = np.array([-X0XV[1],X0XV[0],0])
-                ## Viscous Model
-                if (SmoothModel == 0 or KernelOrder == 0):
-                    Ui[icp,:] = Ui[icp,:] + Gammas[iv] / (2 * np.pi) * t / r2
-                else:
-                    Qm = 0
-                    if SmoothModel==0:
+                    ## Viscous Model
+                    if (SmoothModel == 0 or KernelOrder == 0):
                         Ui[icp,:] = Ui[icp,:] + Gammas[iv] / (2 * np.pi) * t / r2
                     else:
-                        # Smooth model 1 or 2
-                        rho2 = fRho2(r2,iv)
-                        E    = fE(rho2)
-                        Qm   = fKernel(rho2)
-                        Ui[icp,:] = Ui[icp,:] + Gammas[iv]/(2*np.pi)*t*(1-Qm*E)/r2
+                        Qm = 0
+                        if SmoothModel==0:
+                            Ui[icp,:] = Ui[icp,:] + Gammas[iv] / (2 * np.pi) * t / r2
+                        else:
+                            # Smooth model 1 or 2
+                            rho2 = fRho2(r2,iv)
+                            E    = fE(rho2)
+                            Qm   = fKernel(rho2)
+                            Ui[icp,:] = Ui[icp,:] + Gammas[iv]/(2*np.pi)*t*(1-Qm*E)/r2
+    else:
+        raise NotImplementedError()
     # fprintf('\n');
     
     return Ui

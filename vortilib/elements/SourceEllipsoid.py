@@ -2,6 +2,7 @@
 References:
     [1] Lamb - Hydrodynamics, p.141
     [2] Durand - Aerodynamic theory, Vol.1,  p.278
+    [3] Anderson, Branlard, Vijayakumar, Johnson - Investigation of the nacelle blockage effect for a downwind turbine, Journal of Physics
 
 
 NOTES on semi-elliptic coordinates (mu, zeta, omega) :
@@ -29,7 +30,7 @@ import numpy as np
 
 def T_semielliptic_cart(mu,zeta,theta,k=1):
     """ 
-    Tranforms semi-elliptic coordinates to cartesian coordinates
+    Tranforms semi-elliptic coordinates to cartesian coordinates (see [3])
         k=a*e , grand axe times eccentricity
     """
     x = k*mu*zeta
@@ -40,7 +41,7 @@ def T_semielliptic_cart(mu,zeta,theta,k=1):
 
 def T_cart_semielliptic(x,y,z,k=1):
     """ 
-    Tranforms cartesian coordinates to semi-elliptic coordinates 
+    Tranforms cartesian coordinates to semi-elliptic coordinates (see [3])
         k=a*e , grand axe times eccentricity
     """
     r               = np.sqrt(y**2+z**2)
