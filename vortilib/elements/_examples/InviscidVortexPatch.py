@@ -101,6 +101,7 @@ ax.set_aspect('equal','box')
 ax.set_title('Inviscid Vortex Patch - Velocity Field')
 
 
+# --- Check that circulation match analytical value
 def circulationSurvey(r, nTheta=100):
     theta=np.linspace(0,2*np.pi,nTheta+1)
     dTheta=theta[1]-theta[0]
@@ -109,8 +110,9 @@ def circulationSurvey(r, nTheta=100):
     Zcp=0*Xcp
     Ux, Uy, _ = ivp_u(Xcp, Ycp, k=k)
     Ut = Uy * np.cos(theta) - Ux * np.sin(theta)
-    GammaCalc   = 2*np.pi * r*Ut[0]
     GammaTheory = ivp_Gamma([r], k=k)[0]
+    #GammaCalc   = 2*np.pi * r*Ut[0]
+    GammaCalc = r* np.trapz(Ut,theta)
     return  GammaCalc, GammaTheory
 
 print(circulationSurvey(0.1))
@@ -119,16 +121,6 @@ print(circulationSurvey(0.9))
 print(circulationSurvey(1.0))
 print(circulationSurvey(2.0))
 print(circulationSurvey(3.0))
-
-
-
-
-
-
-
-
-
-
 
 plt.show()
 

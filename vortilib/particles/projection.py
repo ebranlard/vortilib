@@ -592,7 +592,7 @@ class TestProjection(unittest.TestCase):
         # NOTE: still sound boundary effects
         # TODO: Make this test low level (no Part and mesh dependencies!)
         from vortilib.particles.initialization import init_from_mesh
-        from vortilib.elements.InviscidVortexPatch import omega
+        from vortilib.elements.InviscidVortexPatch import ivp_omega
         from vortilib.mesh import mesh
         #  Setting up mesh
         nx = 7
@@ -601,7 +601,7 @@ class TestProjection(unittest.TestCase):
         vy = np.linspace(-1.0,1.0,ny)
         X,Y = np.meshgrid(vx,vy)
         Omega=np.zeros(X.shape)
-        Z=omega(X,Y,3,False)
+        Z=ivp_omega(X,Y,3,False)
         # 
         mesh = mesh.Mesh(vy,vx)
         mesh.values=np.zeros((1,ny,nx))
