@@ -28,8 +28,6 @@ def vps_u(CP,XV,Gammas,SmoothModel=0,KernelOrder=2,SmoothParam=None):
     """
     low level interface, for N (2D?) point Vortices
 
-    TODO: I'm not sure if 3D implemented properly
-
     # Takes matrices as input of size ( : , 3) or (:,2)
 
     CP: control points where the velocity is computed
