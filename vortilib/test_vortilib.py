@@ -6,6 +6,7 @@ from vortilib.elements.VortexCylinder       import *
 from vortilib.elements.VortexCylinderSkewed import *
 from vortilib.elements.VortexHelix          import *
 from vortilib.elements.VortexRing           import *
+from vortilib.elements.VortexParticles      import *
 from vortilib.elements.SourceEllipsoid      import *
 from vortilib.maths.vectoranalysis          import *
 from vortilib.mesh.mesh                     import *
