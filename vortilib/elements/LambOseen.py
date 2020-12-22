@@ -15,10 +15,32 @@ def lo_omega(X,Y,Gamma=1,t=1,nu=1, polarIn=False):
     """
     if polarIn:
         r = X
-        theta = Y
     else:
         r = np.sqrt(X ** 2 + Y ** 2)
-        theta = atan2(Y,X)
     
     omega_z = Gamma/(4*np.pi*nu*t) * (np.exp(- r**2/(4*nu*t)))
     return omega_z
+
+def lo_u(X,Y,Gamma=1,t=1,nu=1, polarIn=False, polarOut=False): 
+    """ 
+    Velocity for 2D Lamb-Oseen vortex
+    """
+
+    if polarIn:
+        r = X
+        theta = Y
+    else:
+        r = np.sqrt(X ** 2 + Y ** 2)
+        theta = np.arctan2(Y,X)
+    Ut = np.zeros(X.shape)
+    # r>0
+    bPos = r>1e-12
+    r=r[bPos]
+    Ut[bPos] = Gamma/(2*np.pi*r) * (1 - np.exp(-r**2/(4*nu*t)))
+    if polarOut:
+        U = Ut * 0
+        V = Ut
+    else:
+        U = -np.sin(theta)*Ut
+        V =  np.cos(theta)*Ut
+    return U,V

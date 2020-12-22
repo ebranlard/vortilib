@@ -42,6 +42,11 @@ def vps_u(CP,XV,Gammas,SmoothModel=0,KernelOrder=2,SmoothParam=None):
     ndimCP = XV.shape[1]
     if ndim != ndimCP:
         raise Exception('Your control points and vortex point do not have the same dimension.')
+    if SmoothParam is not None:
+        if not hasattr(SmoothParam,'__len__'):
+            SmoothParam=np.ones(CP.shape[0])*SmoothParam
+
+
 
     Ui = np.zeros((ncp,ndim))
 
@@ -106,7 +111,7 @@ def vps_u(CP,XV,Gammas,SmoothModel=0,KernelOrder=2,SmoothParam=None):
                             Ui[icp,:] = Ui[icp,:] + Gammas[iv] / (2 * np.pi) * t / r2
                         else:
                             # Smooth model 1 or 2
-                            rho2 = fRho2(r2,iv)
+                            rho2 = frho2(r2,iv)
                             E    = fE(rho2)
                             Qm   = fKernel(rho2)
                             Ui[icp,:] = Ui[icp,:] + Gammas[iv]/(2*np.pi)*t*(1-Qm*E)/r2

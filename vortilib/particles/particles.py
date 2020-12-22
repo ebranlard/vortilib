@@ -1,3 +1,7 @@
+""" 
+Class to handle a set of particles for vortex particles methods
+
+"""
 import numpy as np
 ##
 

@@ -36,7 +36,7 @@ r=np.linspace(0,2,100)
 theta=r*0
 ax.plot(r, r/2,'k--', label=r'$r/2$ slope')
 for i,k in enumerate([1/2,1,2,4]):
-    ur,utheta, omega = ivp_u(r, theta, k=k, polarIn=True, polarOut=True)
+    ur,utheta = ivp_u(r, theta, k=k, polarIn=True, polarOut=True)
     ax.plot(r, utheta, color=fColrs(i+1), label=r'$k={}$'.format(k))
 ax.set_xlabel('$r$ [m]')
 ax.set_ylabel(r'$u_\theta$ [m/s]')

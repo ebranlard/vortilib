@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-from vortilib.elements.InviscidVortexPatch import omega
+from vortilib.elements.InviscidVortexPatch import ivp_omega
 from vortilib.elements.VortexPoint import vps_u
 from vortilib.mesh import mesh
 from vortilib.particles import particles
@@ -28,7 +28,7 @@ mesh = mesh.Mesh(vx,vy)
 
 # --- Setting up particles
 k_patch = 3
-fOmega = lambda x,y : omega(x,y,k_patch,False)
+fOmega = lambda x,y : ivp_omega(x,y,k_patch,False)
 Part = initialization.init_from_mesh_and_fun(fOmega, mesh, location='CellCenter')
 Part.removeZeroVorticity()
 

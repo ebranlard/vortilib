@@ -63,27 +63,21 @@ def ivp_u(X, Y, k=2, polarIn=False, polarOut=False):
     else:
         r = np.sqrt(X ** 2 + Y ** 2)
         theta = np.arctan2(Y,X)
-    U       = np.zeros(X.shape)
-    V       = np.zeros(Y.shape)
     Ut      = np.zeros(X.shape)
-    omega_z = np.zeros(X.shape)
     # r<=1
     bLow= np.logical_and(r<=1, r>1e-14)
     rl = r[bLow]
     Ut[bLow]       = (1 - (1-rl**2)**k +  (rl**2 *(1-rl**2)**k))/(2*(1+k)*rl)
-    omega_z[bLow]  = (1 - rl**2)**k
     # r>1
     bHigh=r>1
     Ut[bHigh] = 1.0/(2*(1+k)*r[bHigh])
-    omega_z[bHigh] = 0
     # r=0
     bZero=r<1e-14
     Ut[bZero]      = 0
-    omega_z[bZero] = 1
     if polarOut:
         U = Ut * 0
         V = Ut
     else:
         U = -np.sin(theta)*Ut
         V =  np.cos(theta)*Ut
-    return U,V,omega_z
+    return U,V

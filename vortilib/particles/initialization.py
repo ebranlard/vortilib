@@ -4,6 +4,7 @@ from .projection import interp_m2p
 
 
 def init_from_mesh_and_fun(fOmega, mesh, location='CellCenter'):
+    """ Initialize a set of particles from mesh volumes, mesh nodes, and a vortiity function """
     nDim = mesh.nDim
     if location=='CellCenter':
         # Putting particles at the middle of the cell
